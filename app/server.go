@@ -15,7 +15,6 @@ func main() {
 
 	if args[1] == "ping" {
 		fmt.Print("pong")
-		os.Exit(0)
 	} else {
 		fmt.Println("Unknown command:", args[1])
 		os.Exit(1)
