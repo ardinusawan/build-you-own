@@ -2,17 +2,25 @@ package main
 
 import (
 	"fmt"
-	// Uncomment this block to pass the first stage
 	"net"
 	"os"
 )
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
+	args := os.Args
 
-	// Uncomment this block to pass the first stage
-	//
+	if len(args) < 2 {
+		fmt.Println("Usage: ./app <command>")
+	}
+
+	if args[1] == "ping" {
+		fmt.Print("pong")
+		os.Exit(0)
+	} else {
+		fmt.Println("Unknown command:", args[1])
+		os.Exit(1)
+	}
+
 	l, err := net.Listen("tcp", "0.0.0.0:6379")
 	if err != nil {
 		fmt.Println("Failed to bind to port 6379")
