@@ -9,7 +9,6 @@ import (
 
 func handleConnection(conn net.Conn) {
 	fmt.Println("Handling new connection")
-	// defer conn.Close()
 
 	for {
 
