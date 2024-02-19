@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -10,16 +11,22 @@ func handleConnection(conn net.Conn) {
 	fmt.Println("Handling new connection")
 	// defer conn.Close()
 
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println("Error reading from connection:", err.Error())
-		os.Exit(1)
-	}
-	fmt.Printf("received %d bytes\n", n)
-	fmt.Printf("received the following data: %s", string(buf[:n]))
-	if isPing(buf[:n]) {
-		pong(conn)
+	for {
+
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
+		if err != nil {
+			if err != io.EOF {
+				fmt.Println("Error reading from connection:", err.Error())
+				os.Exit(1)
+			}
+			return
+		}
+		fmt.Printf("received %d bytes\n", n)
+		fmt.Printf("received the following data: %s", string(buf[:n]))
+		if isPing(buf[:n]) {
+			pong(conn)
+		}
 	}
 }
 
@@ -30,7 +37,7 @@ func pong(conn net.Conn) {
 		fmt.Println("Error responsding to ping:", err.Error())
 		os.Exit(1)
 	}
-	fmt.Printf("sent %d bytes", n)
+	fmt.Printf("sent %d bytes\n", n)
 	fmt.Printf("sent the following data: %s", string(pong))
 }
 
