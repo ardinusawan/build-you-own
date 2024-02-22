@@ -25,7 +25,7 @@ func parseRedisMessage(message string) ([]string, error) {
 	return parts, nil
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, storage Storage) {
 	fmt.Println("Handling new connection")
 
 	for {
@@ -53,8 +53,34 @@ func handleConnection(conn net.Conn) {
 			pong(conn)
 		case "echo":
 			echo(conn, commands[1])
+		case "set":
+			key := commands[1]
+			value := commands[2]
+			set(storage, key, value)
+			ok(conn)
+		case "get":
+			key := commands[1]
+			value := get(storage, key)
+			echo(conn, value)
 		}
 	}
+}
+
+func ok(conn net.Conn) {
+	msg := fmt.Sprintf("+OK\r\n")
+	_, err := conn.Write([]byte(msg))
+	if err != nil {
+		fmt.Errorf("Error responding ok:", err.Error())
+		os.Exit(1)
+	}
+}
+
+func set(storage Storage, key string, value string) {
+	storage.Set(key, value)
+}
+
+func get(storage Storage, key string) string {
+	return storage.Get(key)
 }
 
 func echo(conn net.Conn, message string) {
@@ -91,6 +117,8 @@ func main() {
 	}
 	defer l.Close()
 
+	redis := NewMemoryStorage()
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -98,6 +126,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		go handleConnection(conn)
+		go handleConnection(conn, redis)
 	}
 }
