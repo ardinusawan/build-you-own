@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -123,7 +124,10 @@ func isPing(command string) bool {
 }
 
 func main() {
-	l, err := net.Listen("tcp", "0.0.0.0:6379")
+	port := flag.String("port", "6379", "port number")
+	flag.Parse()
+
+	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", *port))
 	if err != nil {
 		fmt.Errorf("Failed to bind to port 6379")
 		os.Exit(1)
