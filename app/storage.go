@@ -34,6 +34,7 @@ func (m *MemoryStorage) Get(key string) string {
 	}
 
 	if data, ok := m.key[key]; ok && *data.ExpireIn <= time.Now().UnixMilli() {
+		m.Del(key)
 		return "-1"
 	}
 
@@ -41,6 +42,10 @@ func (m *MemoryStorage) Get(key string) string {
 		return data.Val
 	}
 	return ""
+}
+
+func (m *MemoryStorage) Del(key string) {
+	delete(m.key, key)
 }
 
 func NewMemoryStorage() *MemoryStorage {
