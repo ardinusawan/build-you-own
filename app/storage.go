@@ -9,14 +9,13 @@ type Storage interface {
 	Get(key string) string
 }
 
-type Pair struct {
-	Key      string
+type Data struct {
 	Val      string
 	ExpireIn *int64 // UnixMilli
 }
 
 type MemoryStorage struct {
-	items []Pair
+	key map[string]Data
 }
 
 func (m *MemoryStorage) Set(key string, val string, px *int64) {
@@ -26,37 +25,27 @@ func (m *MemoryStorage) Set(key string, val string, px *int64) {
 		expireIn = &expirePtr
 	}
 
-	for i, item := range m.items {
-		if item.Key == key {
-			m.items[i].Val = val
-			m.items[i].ExpireIn = expireIn
-			return
-		}
-	}
-	m.items = append(m.items, Pair{key, val, expireIn})
+	m.key[key] = Data{Val: val, ExpireIn: expireIn}
 }
 
 func (m *MemoryStorage) Get(key string) string {
-	for _, item := range m.items {
-		if item.Key == key && item.ExpireIn == nil {
-			return item.Val
-		}
+	if data, ok := m.key[key]; ok && data.ExpireIn == nil {
+		return data.Val
+	}
 
-		expireIn := item.ExpireIn
-		if item.Key == key && *expireIn <= time.Now().UnixMilli() {
-			return "-1"
-		}
+	if data, ok := m.key[key]; ok && *data.ExpireIn <= time.Now().UnixMilli() {
+		return "-1"
+	}
 
-		if item.Key == key && *expireIn > time.Now().UnixMilli() {
-			return item.Val
-		}
+	if data, ok := m.key[key]; ok && *data.ExpireIn > time.Now().UnixMilli() {
+		return data.Val
 	}
 	return ""
 }
 
 func NewMemoryStorage() *MemoryStorage {
 	m := MemoryStorage{
-		items: []Pair{},
+		key: make(map[string]Data),
 	}
 	return &m
 }
