@@ -56,7 +56,21 @@ func handleConnection(conn net.Conn, storage Storage) {
 		case "set":
 			key := commands[1]
 			value := commands[2]
-			set(storage, key, value)
+			var expireIn *int64
+			if len(commands) >= 5 {
+				command := commands[3]
+				switch command {
+				case "px":
+					howLongMs := commands[4]
+					if val, err := strconv.ParseInt(howLongMs, 10, 64); err == nil {
+						expireIn = &val
+					} else {
+						fmt.Errorf("Error px ParseInt :", err.Error())
+						os.Exit(1)
+					}
+				}
+			}
+			storage.Set(key, value, expireIn)
 			ok(conn)
 		case "get":
 			key := commands[1]
@@ -75,16 +89,15 @@ func ok(conn net.Conn) {
 	}
 }
 
-func set(storage Storage, key string, value string) {
-	storage.Set(key, value)
-}
-
 func get(storage Storage, key string) string {
 	return storage.Get(key)
 }
 
 func echo(conn net.Conn, message string) {
 	msg := fmt.Sprintf("$%d\r\n%s\r\n", len(message), message)
+	if message == "-1" { // Expired
+		msg = fmt.Sprintf("$%s\r\n", message)
+	}
 	n, err := conn.Write([]byte(msg))
 	if err != nil {
 		fmt.Errorf("Error responding to echo:", err.Error())

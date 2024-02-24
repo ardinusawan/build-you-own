@@ -1,41 +1,51 @@
 package main
 
+import (
+	"time"
+)
+
 type Storage interface {
-	Set(key string, val string)
+	Set(key string, val string, px *int64)
 	Get(key string) string
 }
 
-type Pair struct {
-	Key string
-	Val string
+type Data struct {
+	Val      string
+	ExpireIn *int64 // UnixMilli
 }
 
 type MemoryStorage struct {
-	items []Pair
+	key map[string]Data
 }
 
-func (m *MemoryStorage) Set(key string, val string) {
-	for i, item := range m.items {
-		if item.Key == key {
-			m.items[i].Val = val
-			return
-		}
+func (m *MemoryStorage) Set(key string, val string, px *int64) {
+	var expireIn *int64
+	if px != nil {
+		expirePtr := time.Now().UnixMilli() + *px
+		expireIn = &expirePtr
 	}
-	m.items = append(m.items, Pair{key, val})
+
+	m.key[key] = Data{Val: val, ExpireIn: expireIn}
 }
 
 func (m *MemoryStorage) Get(key string) string {
-	for _, item := range m.items {
-		if item.Key == key {
-			return item.Val
-		}
+	if data, ok := m.key[key]; ok && data.ExpireIn == nil {
+		return data.Val
+	}
+
+	if data, ok := m.key[key]; ok && *data.ExpireIn <= time.Now().UnixMilli() {
+		return "-1"
+	}
+
+	if data, ok := m.key[key]; ok && *data.ExpireIn > time.Now().UnixMilli() {
+		return data.Val
 	}
 	return ""
 }
 
 func NewMemoryStorage() *MemoryStorage {
 	m := MemoryStorage{
-		items: []Pair{},
+		key: make(map[string]Data),
 	}
 	return &m
 }
