@@ -26,7 +26,7 @@ func parseRedisMessage(message string) ([]string, error) {
 	return parts, nil
 }
 
-func handleConnection(conn net.Conn, storage Storage) {
+func handleConnection(conn net.Conn, storage Storage, repl Replication) {
 	fmt.Println("Handling new connection")
 
 	for {
@@ -77,6 +77,12 @@ func handleConnection(conn net.Conn, storage Storage) {
 			key := commands[1]
 			value := get(storage, key)
 			echo(conn, value)
+		case "info":
+			whatInfo := commands[1]
+			switch whatInfo {
+			case "replication":
+				echo(conn, fmt.Sprintf("role:%s", repl.GetStatus().Role))
+			}
 		}
 	}
 }
@@ -135,6 +141,7 @@ func main() {
 	defer l.Close()
 
 	redis := NewMemoryStorage()
+	repl := NewReplicationStorage()
 
 	for {
 		conn, err := l.Accept()
@@ -143,6 +150,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		go handleConnection(conn, redis)
+		go handleConnection(conn, redis, repl)
 	}
 }
